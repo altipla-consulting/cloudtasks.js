@@ -14,16 +14,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/altipla-consulting/cloudtasks.git"
+    "url": "git+https://github.com/altipla-consulting/cloudtasks.js.git"
   },
   "bugs": {
-    "url": "https://github.com/altipla-consulting/cloudtasks/issues"
+    "url": "https://github.com/altipla-consulting/cloudtasks.js/issues"
   },
   "files": [
     "dist",
     "src"
   ],
-  "homepage": "https://github.com/altipla-consulting/cloudtasks#readme",
+  "homepage": "https://github.com/altipla-consulting/cloudtasks.js#readme",
   "publishConfig": {
     "access": "public"
   },
