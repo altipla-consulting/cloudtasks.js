@@ -1,6 +1,6 @@
 import { logger } from '@altipla/logging'
 import { CloudTasksClient } from '@google-cloud/tasks'
-import { H3Event, HTTPError } from 'h3'
+import { getHeader, H3Event, createError } from 'h3'
 import ksuid from 'ksuid'
 import { OAuth2Client } from 'google-auth-library'
 
@@ -110,15 +110,15 @@ const authClient = new OAuth2Client()
  * @returns Verified task content.
  */
 export async function verifyTaskH3(config: CloudTasksConfig, event: H3Event): Promise<Task> {
-  let authorization = event.req.headers.get('authorization')
+  let authorization = getHeader(event, 'authorization')
   if (!authorization?.startsWith('Bearer ')) {
-    throw new HTTPError(`invalid authorization: ${authorization}`, { status: 401 })
+    throw createError({ status: 401, message: `invalid authorization: ${authorization}` })
   }
   let bearer = authorization.slice(7)
 
   if (!ENV_PRODUCTION && config.forcedEnvironment !== 'production') {
     if (bearer !== 'local-token') {
-      throw new HTTPError(`invalid authentication: ${bearer}`, { status: 401 })
+      throw createError({ status: 401, message: `invalid authentication: ${bearer}` })
     }
     return readTask(event)
   }
@@ -129,7 +129,7 @@ export async function verifyTaskH3(config: CloudTasksConfig, event: H3Event): Pr
       audience: config.audience,
     })
   } catch (error) {
-    throw new HTTPError('invalid authentication', { status: 401, cause: error })
+    throw createError({ status: 401, message: 'invalid authentication', cause: error })
   }
 
   return readTask(event)
@@ -137,8 +137,8 @@ export async function verifyTaskH3(config: CloudTasksConfig, event: H3Event): Pr
 
 function readTask(event: H3Event): Task {
   return {
-    queueName: event.req.headers.get('x-cloudtasks-queuename') as QueueName,
-    taskName: event.req.headers.get('x-cloudtasks-taskname')!,
-    retryCount: parseInt(event.req.headers.get('x-cloudtasks-taskretrycount')!, 10),
+    queueName: getHeader(event, 'x-cloudtasks-queuename') as QueueName,
+    taskName: getHeader(event, 'x-cloudtasks-taskname')!,
+    retryCount: parseInt(getHeader(event, 'x-cloudtasks-taskretrycount')!, 10),
   } satisfies Task
 }
