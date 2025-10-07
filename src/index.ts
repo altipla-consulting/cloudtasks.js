@@ -12,12 +12,26 @@ export function queueName(name: string): QueueName {
 const ENV_PRODUCTION = process.env.NODE_ENV === 'production'
 
 export type CloudTasksConfig = {
+  /** JSON credentials for the service account. */
   credentials?: string
+
+  /** Google Cloud project ID. */
   project: string
+
+  /** Location of the queue. Example: `us-central1` or `europe-west1`	. */
   location: string
+
+  /** Audience of the token for the OIDC authentication. Most of the time it will be the URL of the service. */
   audience: string
+
+  /** The service account email to use for the OIDC authentication. */
   serviceAccount: string
-  base: string
+
+  /** Base URL of the service to concatenate with the URL of the task. */
+  baseURL: string
+
+  /** Force the environment to be production or development. By default it will be the value of the NODE_ENV environment variable. */
+  forcedEnvironment?: 'production' | 'development'
 }
 export function defineTasksConfig(config: CloudTasksConfig): CloudTasksConfig {
   return config
@@ -33,12 +47,20 @@ function initTasksClient(config: CloudTasksConfig) {
   return cachedTasksClient
 }
 
+/**
+ * Send a task to a queue.
+ * @param config - Configuration of the library.
+ * @param queue - Name of the queue to send the task to.
+ * @param url - Target URL of the task to send.
+ * @param payload - Payload of the task to send.
+ * @returns Generated name of the task.
+ */
 export async function sendTask(config: CloudTasksConfig, queue: QueueName, url: string, payload: string) {
   const tasksClient = initTasksClient(config)
 
-  let u = new URL(url, config.base)
+  let u = new URL(url, config.baseURL)
 
-  if (!ENV_PRODUCTION) {
+  if (!ENV_PRODUCTION && config.forcedEnvironment !== 'production') {
     logger.debug({
       msg: 'simulate local task',
       url: u.toString(),
@@ -80,14 +102,21 @@ type Task = {
   retryCount: number
 }
 const authClient = new OAuth2Client()
-export async function verifyTask(event: H3Event, config: CloudTasksConfig): Promise<Task> {
+
+/**
+ * Verify the authentication of a received task.
+ * @param config Configuration of the library.
+ * @param event H3 event to verify the request.
+ * @returns Verified task content.
+ */
+export async function verifyTaskH3(config: CloudTasksConfig, event: H3Event): Promise<Task> {
   let authorization = event.req.headers.get('authorization')
   if (!authorization?.startsWith('Bearer ')) {
     throw new HTTPError(`invalid authorization: ${authorization}`, { status: 401 })
   }
   let bearer = authorization.slice(7)
 
-  if (!ENV_PRODUCTION) {
+  if (!ENV_PRODUCTION && config.forcedEnvironment !== 'production') {
     if (bearer !== 'local-token') {
       throw new HTTPError(`invalid authentication: ${bearer}`, { status: 401 })
     }
