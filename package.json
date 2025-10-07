@@ -6,7 +6,7 @@
   "types": "./dist/index.d.ts",
   "type": "module",
   "scripts": {
-    "build": "tsdown src/index.ts",
+    "build": "tsdown --dts src/index.ts",
     "lint": "tsc --noEmit && eslint src",
     "fix": "eslint --fix --ext .ts src",
     "prepublishOnly": "pnpm build",
