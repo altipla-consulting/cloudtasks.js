@@ -1,0 +1,53 @@
+{
+  "name": "@altipla/cloudtasks",
+  "version": "0.0.0",
+  "description": "Easier integration with Google Cloud Tasks.",
+  "main": "dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsdown src/index.ts",
+    "lint": "tsc --noEmit && eslint src",
+    "fix": "eslint --fix --ext .ts src",
+    "prepublishOnly": "pnpm build",
+    "test": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/altipla-consulting/cloudtasks.git"
+  },
+  "bugs": {
+    "url": "https://github.com/altipla-consulting/cloudtasks/issues"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "homepage": "https://github.com/altipla-consulting/cloudtasks#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "Altipla Consulting",
+  "license": "MIT",
+  "devDependencies": {
+    "@altipla/eslint-config-ts": "^1.0.5",
+    "@types/node": "^22.14.0",
+    "eslint": "^9.24.0",
+    "h3": "*",
+    "tsdown": "^0.12.6",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@altipla/logging": "^0.1.8",
+    "@google-cloud/tasks": "^6.2.0",
+    "google-auth-library": "^10.4.0",
+    "ksuid": "^3.0.0",
+    "zod": "^3.24.2"
+  },
+  "pnpm": {
+    "neverBuiltDependencies": []
+  },
+  "peerDependencies": {
+    "h3": "2.0.0-rc.1"
+  }
+}
