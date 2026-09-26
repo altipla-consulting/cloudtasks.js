@@ -7,8 +7,8 @@
   "type": "module",
   "scripts": {
     "build": "tsdown --dts src/index.ts",
-    "lint": "tsc --noEmit && eslint src",
-    "fix": "eslint --fix --ext .ts src",
+    "lint": "tsc --noEmit && oxlint src",
+    "fix": "oxlint --fix src",
     "prepublishOnly": "pnpm build",
     "test": "exit 0"
   },
@@ -30,9 +30,10 @@
   "author": "Altipla Consulting",
   "license": "MIT",
   "devDependencies": {
-    "@altipla/eslint-config-ts": "^1.0.5",
+    "@altipla/oxlint-config": "^0.2.2",
     "@types/node": "^22.14.0",
-    "eslint": "^9.24.0",
+    "oxlint": "^1.85.0",
+    "oxlint-tsgolint": "^7.0.2003",
     "tsdown": "^0.12.6",
     "typescript": "^5.8.3"
   },

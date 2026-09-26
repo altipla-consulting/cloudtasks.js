@@ -9,7 +9,6 @@
     "noImplicitAny": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": "src",
     "allowSyntheticDefaultImports": true
   },
   "include": ["src/**/*"],
