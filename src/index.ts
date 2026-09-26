@@ -1,6 +1,5 @@
 import { logger } from '@altipla/logging'
 import { CloudTasksClient } from '@google-cloud/tasks'
-import { getHeader, H3Event, createError } from 'h3'
 import ksuid from 'ksuid'
 import { OAuth2Client } from 'google-auth-library'
 
@@ -96,49 +95,59 @@ export async function sendTask(config: CloudTasksConfig, queue: QueueName, url: 
   return response.name
 }
 
-type Task = {
+export type Task = {
   queueName: QueueName
   taskName: string
   retryCount: number
 }
 const authClient = new OAuth2Client()
 
-/**
- * Verify the authentication of a received task.
- * @param config Configuration of the library.
- * @param event H3 event to verify the request.
- * @returns Verified task content.
- */
-export async function verifyTaskH3(config: CloudTasksConfig, event: H3Event): Promise<Task> {
-  let authorization = getHeader(event, 'authorization')
-  if (!authorization?.startsWith('Bearer ')) {
-    throw createError({ status: 401, message: `invalid authorization: ${authorization}` })
-  }
-  let bearer = authorization.slice(7)
-
-  if (!ENV_PRODUCTION && config.forcedEnvironment !== 'production') {
-    if (bearer !== 'local-token') {
-      throw createError({ status: 401, message: `invalid authentication: ${bearer}` })
+export function handleCallback(
+  config: CloudTasksConfig,
+  callback: (request: Request, task: Task) => Response | Promise<Response>,
+): (request: Request) => Promise<Response> {
+  return async function (request) {
+    let authorization = request.headers.get('authorization')
+    if (!authorization?.startsWith('Bearer ')) {
+      return new Response('invalid authorization', { status: 401 })
     }
-    return readTask(event)
-  }
+    let bearer = authorization.slice(7)
 
-  try {
-    await authClient.verifyIdToken({
-      idToken: bearer,
-      audience: config.audience,
-    })
-  } catch (error) {
-    throw createError({ status: 401, message: 'invalid authentication', cause: error })
-  }
+    if (!ENV_PRODUCTION && config.forcedEnvironment !== 'production') {
+      if (bearer !== 'local-token') {
+        return new Response('invalid authentication', { status: 401 })
+      }
+    } else {
+      try {
+        await authClient.verifyIdToken({
+          idToken: bearer,
+          audience: config.audience,
+        })
+      } catch {
+        return new Response('invalid authentication', { status: 401 })
+      }
+    }
 
-  return readTask(event)
+    return callback(request, readTask(request.headers))
+  }
 }
 
-function readTask(event: H3Event): Task {
+export function handleAstroCallback<Context extends { request: Request }>(
+  config: CloudTasksConfig,
+  callback: (context: Context, task: Task) => Response | Promise<Response>,
+): (context: Context) => Promise<Response> {
+  return function (context) {
+    const handler = handleCallback(config, function (request, task) {
+      return callback(context, task)
+    })
+    return handler(context.request)
+  }
+}
+
+function readTask(headers: Headers): Task {
   return {
-    queueName: getHeader(event, 'x-cloudtasks-queuename') as QueueName,
-    taskName: getHeader(event, 'x-cloudtasks-taskname')!,
-    retryCount: parseInt(getHeader(event, 'x-cloudtasks-taskretrycount')!, 10),
+    queueName: headers.get('x-cloudtasks-queuename') as QueueName,
+    taskName: headers.get('x-cloudtasks-taskname')!,
+    retryCount: parseInt(headers.get('x-cloudtasks-taskretrycount')!, 10),
   } satisfies Task
 }
